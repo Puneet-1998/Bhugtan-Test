@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bhugtan — Corporate Bill Payment Portal</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230066FF'/><text x='50' y='72' font-size='60' font-weight='bold' fill='white' text-anchor='middle' font-family='sans-serif'>B</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; width: 100%; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #F7F8FC;
+      color: #1B2B4B;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,102,255,0.3); }
+      50% { box-shadow: 0 0 0 8px rgba(0,102,255,0); }
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #E4E8F0; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #CDD3DF; }
+    ::selection { background: #E8F0FF; color: #0066FF; }
+    input::placeholder, textarea::placeholder { color: #9AA5B9; }
+    textarea { font-family: 'DM Sans', sans-serif; }
+    button { font-family: 'DM Sans', sans-serif; }
+    .animate-in { animation: fadeIn 0.4s ease both; }
+    .animate-in-1 { animation-delay: 0.05s; }
+    .animate-in-2 { animation-delay: 0.1s; }
+    .animate-in-3 { animation-delay: 0.15s; }
+    .animate-in-4 { animation-delay: 0.2s; }
+    table { border-spacing: 0; }
+    tr:hover td { background: #FAFBFE; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ─── Design Tokens ───
+    const T = {
+      bg: "#F7F8FC",
+      surface: "#FFFFFF",
+      surfaceAlt: "#F0F2F8",
+      primary: "#1B2B4B",
+      primaryLight: "#2D4A7A",
+      accent: "#0066FF",
+      accentLight: "#E8F0FF",
+      accentSoft: "#4D94FF",
+      success: "#00B67A",
+      successLight: "#E6F9F1",
+      warning: "#F5A623",
+      warningLight: "#FFF8EC",
+      danger: "#E74C3C",
+      dangerLight: "#FDF0EF",
+      text: "#1B2B4B",
+      textSecondary: "#6B7A99",
+      textMuted: "#9AA5B9",
+      border: "#E4E8F0",
+      borderLight: "#F0F2F8",
+      shadow: "0 1px 3px rgba(27,43,75,0.06), 0 1px 2px rgba(27,43,75,0.04)",
+      shadowMd: "0 4px 12px rgba(27,43,75,0.08), 0 2px 6px rgba(27,43,75,0.04)",
+      shadowLg: "0 12px 32px rgba(27,43,75,0.12), 0 4px 12px rgba(27,43,75,0.06)",
+      radius: "12px",
+      radiusSm: "8px",
+      radiusLg: "16px",
+      radiusXl: "20px",
+      font: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontMono: "'JetBrains Mono', 'Fira Code', monospace",
+    };
+
+    // ─── Icons ───
+    const Icon = ({ name, size = 20, color = "currentColor" }) => {
+      const icons = {
+        dashboard: <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>,
+        bill: <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>,
+        add: <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>,
+        remove: <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>,
+        pay: <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>,
+        report: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>,
+        complaint: <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"/>,
+        wallet: <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>,
+        approve: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>,
+        user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>,
+        users: <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>,
+        settings: <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>,
+        shield: <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>,
+        limit: <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>,
+        check: <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>,
+        close: <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>,
+        search: <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>,
+        bell: <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>,
+        chevron: <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>,
+        menu: <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>,
+        balance: <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>,
+        upload: <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>,
+        doc: <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>,
+        logout: <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>,
+        filter: <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>,
+        calendar: <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>,
+        eye: <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>,
+        pending: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>,
+        download: <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>,
+      };
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0, display: "block" }}>
+          {icons[name] || icons.dashboard}
+        </svg>
+      );
+    };
+
+    // ─── Reusable Components ───
+    const Badge = ({ children, variant = "default", style = {} }) => {
+      const vars = {
+        default: { bg: T.accentLight, color: T.accent },
+        success: { bg: T.successLight, color: T.success },
+        warning: { bg: T.warningLight, color: T.warning },
+        danger: { bg: T.dangerLight, color: T.danger },
+        muted: { bg: T.surfaceAlt, color: T.textSecondary },
+      };
+      const v = vars[variant] || vars.default;
+      return (
+        <span style={{
+          display: "inline-flex", alignItems: "center", padding: "3px 10px",
+          borderRadius: "6px", fontSize: "12px", fontWeight: 600, letterSpacing: "0.02em",
+          background: v.bg, color: v.color, whiteSpace: "nowrap", ...style,
+        }}>{children}</span>
+      );
+    };
+
+    const Button = ({ children, variant = "primary", size = "md", icon, onClick, style = {}, disabled }) => {
+      const [hover, setHover] = useState(false);
+      const sizes = {
+        sm: { padding: "6px 14px", fontSize: "13px", gap: "5px" },
+        md: { padding: "10px 20px", fontSize: "14px", gap: "7px" },
+        lg: { padding: "14px 28px", fontSize: "15px", gap: "8px" },
+      };
+      const variants = {
+        primary: { background: hover ? T.primaryLight : T.primary, color: "#fff", boxShadow: hover ? T.shadowMd : T.shadow, border: "none" },
+        accent: { background: hover ? T.accentSoft : T.accent, color: "#fff", boxShadow: hover ? T.shadowMd : T.shadow, border: "none" },
+        outline: { background: hover ? T.surfaceAlt : "transparent", color: T.primary, border: `1.5px solid ${T.border}` },
+        ghost: { background: hover ? T.surfaceAlt : "transparent", color: T.textSecondary, border: "none" },
+        danger: { background: hover ? "#D63C2F" : T.danger, color: "#fff", boxShadow: hover ? T.shadowMd : T.shadow, border: "none" },
+        success: { background: hover ? "#009E6A" : T.success, color: "#fff", border: "none" },
+      };
+      const s = sizes[size] || sizes.md;
+      const v = variants[variant] || variants.primary;
+      return (
+        <button
+          onClick={onClick} disabled={disabled}
+          onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+          style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            gap: s.gap, padding: s.padding, fontSize: s.fontSize, fontWeight: 600,
+            fontFamily: T.font, borderRadius: T.radiusSm,
+            cursor: disabled ? "not-allowed" : "pointer",
+            transition: "all 0.2s ease", letterSpacing: "0.01em",
+            opacity: disabled ? 0.5 : 1, lineHeight: "1.4", ...v, ...style,
+          }}
+        >
+          {icon && <Icon name={icon} size={size === "sm" ? 16 : 18} />}
+          {children}
+        </button>
+      );
+    };
+
+    const Input = ({ label, placeholder, type = "text", icon, value, onChange, style = {} }) => {
+      const [focused, setFocused] = useState(false);
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
+          {label && <label style={{ fontSize: "13px", fontWeight: 600, color: T.textSecondary, letterSpacing: "0.02em" }}>{label}</label>}
+          <div style={{
+            display: "flex", alignItems: "center", gap: "8px",
+            padding: "10px 14px", borderRadius: T.radiusSm,
+            border: `1.5px solid ${focused ? T.accent : T.border}`,
+            background: T.surface, transition: "all 0.2s ease",
+            boxShadow: focused ? `0 0 0 3px ${T.accentLight}` : "none",
+          }}>
+            {icon && <Icon name={icon} size={18} color={T.textMuted} />}
+            <input
+              type={type} placeholder={placeholder} value={value} onChange={onChange}
+              onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+              style={{
+                flex: 1, border: "none", outline: "none", fontSize: "14px",
+                fontFamily: T.font, color: T.text, background: "transparent",
+                width: "100%",
+              }}
+            />
+          </div>
+        </div>
+      );
+    };
+
+    const Card = ({ children, style = {}, onClick, hover: hoverEffect }) => {
+      const [hover, setHover] = useState(false);
+      return (
+        <div
+          onClick={onClick}
+          onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+          style={{
+            background: T.surface, borderRadius: T.radius, padding: "24px",
+            border: `1px solid ${T.border}`,
+            boxShadow: hover && hoverEffect ? T.shadowMd : T.shadow,
+            transition: "all 0.25s ease",
+            cursor: onClick ? "pointer" : "default",
+            transform: hover && hoverEffect ? "translateY(-2px)" : "none",
+            ...style,
+          }}
+        >{children}</div>
+      );
+    };
+
+    const Table = ({ columns, data, actions }) => (
+      <div style={{ overflowX: "auto", borderRadius: T.radius, border: `1px solid ${T.border}` }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: T.font }}>
+          <thead>
+            <tr style={{ background: T.surfaceAlt }}>
+              {columns.map((col, i) => (
+                <th key={i} style={{
+                  padding: "12px 16px", textAlign: "left", fontSize: "11px",
+                  fontWeight: 700, color: T.textSecondary, letterSpacing: "0.06em",
+                  textTransform: "uppercase", borderBottom: `1px solid ${T.border}`,
+                  whiteSpace: "nowrap",
+                }}>{col.label}</th>
+              ))}
+              {actions && <th style={{
+                padding: "12px 16px", textAlign: "right", fontSize: "11px",
+                fontWeight: 700, color: T.textSecondary, letterSpacing: "0.06em",
+                textTransform: "uppercase", borderBottom: `1px solid ${T.border}`,
+              }}>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, i) => (
+              <tr key={i}>
+                {columns.map((col, j) => (
+                  <td key={j} style={{
+                    padding: "14px 16px", fontSize: "14px", color: T.text,
+                    borderBottom: i < data.length - 1 ? `1px solid ${T.borderLight}` : "none",
+                    whiteSpace: "nowrap", transition: "background 0.15s ease",
+                  }}>
+                    {col.render ? col.render(row[col.key], row) : row[col.key]}
+                  </td>
+                ))}
+                {actions && <td style={{
+                  padding: "14px 16px", textAlign: "right",
+                  borderBottom: i < data.length - 1 ? `1px solid ${T.borderLight}` : "none",
+                  transition: "background 0.15s ease",
+                }}>{actions(row)}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+
+    const StatCard = ({ icon, label, value, change, color = T.accent }) => (
+      <Card style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: T.radiusSm, display: "flex",
+            alignItems: "center", justifyContent: "center",
+            background: color + "14",
+          }}>
+            <Icon name={icon} size={22} color={color} />
+          </div>
+          {change !== undefined && (
+            <span style={{
+              fontSize: "12px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px",
+              color: change > 0 ? T.success : T.danger,
+              background: change > 0 ? T.successLight : T.dangerLight,
+            }}>{change > 0 ? "+" : ""}{change}%</span>
+          )}
+        </div>
+        <div>
+          <div style={{ fontSize: "13px", color: T.textSecondary, marginBottom: "4px", fontWeight: 500 }}>{label}</div>
+          <div style={{ fontSize: "26px", fontWeight: 700, color: T.text, letterSpacing: "-0.02em" }}>{value}</div>
+        </div>
+      </Card>
+    );
+
+    const Modal = ({ open, onClose, title, children, width = 520 }) => {
+      if (!open) return null;
+      return (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(27,43,75,0.45)", backdropFilter: "blur(6px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }} onClick={onClose}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: T.surface, borderRadius: T.radiusLg, padding: "28px",
+            width: `min(${width}px, 92vw)`, maxHeight: "85vh", overflowY: "auto",
+            boxShadow: T.shadowLg, animation: "modalIn 0.25s ease",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: T.text }}>{title}</h3>
+              <button onClick={onClose} style={{
+                background: T.surfaceAlt, border: "none", cursor: "pointer", padding: "6px",
+                borderRadius: "8px", display: "flex", transition: "background 0.15s ease",
+              }}><Icon name="close" size={18} color={T.textMuted} /></button>
+            </div>
+            {children}
+          </div>
+        </div>
+      );
+    };
+
+    // ─── Sidebar ───
+    const Sidebar = ({ role, activeItem, onNavigate, collapsed }) => {
+      const menuItems = {
+        maker: [
+          { id: "dashboard", icon: "dashboard", label: "Dashboard" },
+          { id: "add-bills", icon: "add", label: "Add Bills" },
+          { id: "remove-bills", icon: "remove", label: "Remove Bills" },
+          { id: "request-pay", icon: "pay", label: "Request to Pay" },
+          { id: "reports", icon: "report", label: "Reports" },
+          { id: "complaints", icon: "complaint", label: "Complaints" },
+          { id: "wallet-load", icon: "wallet", label: "Wallet Load Req." },
+        ],
+        checker: [
+          { id: "dashboard", icon: "dashboard", label: "Dashboard" },
+          { id: "approve-bills", icon: "approve", label: "Approve Bills" },
+          { id: "remove-req", icon: "remove", label: "Remove Requests" },
+          { id: "proceed-pay", icon: "pay", label: "Proceed to Pay" },
+          { id: "reports", icon: "report", label: "Reports (All)" },
+          { id: "complaints", icon: "complaint", label: "Complaints" },
+          { id: "balance-approve", icon: "balance", label: "Balance Approve" },
+        ],
+        admin: [
+          { id: "dashboard", icon: "dashboard", label: "Dashboard" },
+          { id: "manage-makers", icon: "user", label: "Manage Makers" },
+          { id: "manage-checkers", icon: "users", label: "Manage Checkers" },
+          { id: "set-rights", icon: "shield", label: "Set Rights" },
+          { id: "limit-grant", icon: "limit", label: "Limit Grant" },
+          { id: "limit-remove", icon: "remove", label: "Limit Remove" },
+          { id: "complaints", icon: "complaint", label: "Complaints" },
+        ],
+      };
+      const items = menuItems[role] || [];
+      const roleColor = role === "admin" ? T.warning : role === "checker" ? T.success : T.accent;
+
+      return (
+        <div style={{
+          width: collapsed ? 72 : 260, height: "100vh", background: T.primary,
+          display: "flex", flexDirection: "column", transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)",
+          position: "fixed", left: 0, top: 0, zIndex: 100, overflow: "hidden",
+        }}>
+          <div style={{
+            padding: collapsed ? "20px 16px" : "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)",
+            display: "flex", alignItems: "center", gap: "12px", minHeight: "68px",
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: "10px", background: T.accent,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 800, color: "#fff", fontSize: "16px", flexShrink: 0,
+            }}>B</div>
+            {!collapsed && (
+              <div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: "16px", letterSpacing: "-0.01em" }}>Bhugtan</div>
+                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px", fontWeight: 500 }}>Corporate Payments</div>
+              </div>
+            )}
+          </div>
+
+          {!collapsed && (
+            <div style={{ padding: "16px 20px 8px" }}>
+              <div style={{
+                padding: "8px 12px", borderRadius: "8px",
+                background: "rgba(255,255,255,0.06)", display: "flex",
+                alignItems: "center", gap: "8px",
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: roleColor, animation: "pulseGlow 2s infinite" }} />
+                <span style={{
+                  color: "rgba(255,255,255,0.65)", fontSize: "12px", fontWeight: 600,
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                }}>{role} Panel</span>
+              </div>
+            </div>
+          )}
+
+          <nav style={{ padding: "8px 12px", flex: 1, overflowY: "auto" }}>
+            {items.map((item, idx) => {
+              const active = activeItem === item.id;
+              return (
+                <button key={item.id} onClick={() => onNavigate(item.id)} title={collapsed ? item.label : ""} style={{
+                  display: "flex", alignItems: "center", gap: "12px", width: "100%",
+                  padding: collapsed ? "12px" : "11px 14px", marginBottom: "2px",
+                  borderRadius: "10px", border: "none", cursor: "pointer",
+                  background: active ? "rgba(0,102,255,0.18)" : "transparent",
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  transition: "all 0.15s ease",
+                  animation: `slideInLeft 0.3s ease both`,
+                  animationDelay: `${idx * 0.03}s`,
+                }}>
+                  <Icon name={item.icon} size={20} color={active ? "#70AAFF" : "rgba(255,255,255,0.35)"} />
+                  {!collapsed && (
+                    <span style={{
+                      fontSize: "14px", fontWeight: active ? 600 : 500,
+                      color: active ? "#fff" : "rgba(255,255,255,0.5)",
+                      whiteSpace: "nowrap",
+                    }}>{item.label}</span>
+                  )}
+                  {active && !collapsed && (
+                    <div style={{
+                      marginLeft: "auto", width: 6, height: 6, borderRadius: "50%",
+                      background: "#70AAFF",
+                    }} />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <button onClick={() => {}} style={{
+              display: "flex", alignItems: "center", gap: "12px", width: "100%",
+              padding: collapsed ? "12px" : "11px 14px", borderRadius: "10px",
+              border: "none", cursor: "pointer", background: "transparent",
+              justifyContent: collapsed ? "center" : "flex-start",
+            }}>
+              <Icon name="logout" size={20} color="rgba(255,255,255,0.3)" />
+              {!collapsed && <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>Logout</span>}
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // ─── Header ───
+    const Header = ({ title, subtitle, onToggleSidebar, onHome }) => (
+      <header style={{
+        background: T.surface, borderBottom: `1px solid ${T.border}`,
+        padding: "0 32px", height: "68px", display: "flex",
+        alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 50,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <button onClick={onToggleSidebar} style={{
+            background: "none", border: "none", cursor: "pointer", padding: "6px",
+            borderRadius: "8px", display: "flex",
+          }}>
+            <Icon name="menu" size={22} color={T.textSecondary} />
+          </button>
+          <div>
+            <h1 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: T.text, lineHeight: 1.3 }}>{title}</h1>
+            {subtitle && <p style={{ margin: 0, fontSize: "13px", color: T.textSecondary, lineHeight: 1.3 }}>{subtitle}</p>}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px",
+            background: T.surfaceAlt, borderRadius: T.radiusSm, cursor: "text",
+          }}>
+            <Icon name="search" size={16} color={T.textMuted} />
+            <span style={{ fontSize: "13px", color: T.textMuted }}>Search...</span>
+            <span style={{ fontSize: "11px", color: T.textMuted, background: T.surface, padding: "2px 6px", borderRadius: "4px", border: `1px solid ${T.border}`, fontFamily: T.fontMono }}>⌘K</span>
+          </div>
+          <div style={{ position: "relative", cursor: "pointer", padding: "8px", borderRadius: "8px", background: T.surfaceAlt }}>
+            <Icon name="bell" size={20} color={T.textSecondary} />
+            <div style={{
+              position: "absolute", top: 6, right: 6, width: 8, height: 8,
+              borderRadius: "50%", background: T.danger, border: "2px solid " + T.surface,
+            }} />
+          </div>
+          <button onClick={onHome} style={{
+            width: 38, height: 38, borderRadius: "10px",
+            background: `linear-gradient(135deg, ${T.accent}, ${T.primaryLight})`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#fff", fontWeight: 700, fontSize: "14px", cursor: "pointer",
+            border: "none",
+          }}>RA</button>
+        </div>
+      </header>
+    );
+
+    // ─── Onboarding Screen ───
+    const OnboardingScreen = ({ onComplete }) => {
+      const [step, setStep] = useState(0);
+      const steps = [
+        { title: "Company Details", desc: "Basic information" },
+        { title: "KYC Documents", desc: "Verification docs" },
+        { title: "Bank Details", desc: "Bank account" },
+        { title: "Review & Submit", desc: "Confirm" },
+      ];
+      const docs = [
+        { name: "PAN Card", file: "pan_card.pdf" },
+        { name: "GST Certificate", file: "gst_cert.pdf" },
+        { name: "Certificate of Incorporation", file: "coi.pdf" },
+        { name: "Board Resolution", file: "board_res.pdf" },
+        { name: "Authorized Signatory ID", file: "auth_sig.pdf" },
+        { name: "Address Proof", file: "address.pdf" },
+      ];
+
+      return (
+        <div style={{
+          minHeight: "100vh", background: `linear-gradient(145deg, ${T.primary} 0%, #1a3a6a 50%, #0F2040 100%)`,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px",
+          fontFamily: T.font,
+        }}>
+          {/* Decorative circles */}
+          <div style={{ position: "fixed", top: -120, right: -120, width: 400, height: 400, borderRadius: "50%", background: "rgba(0,102,255,0.06)", pointerEvents: "none" }} />
+          <div style={{ position: "fixed", bottom: -80, left: -80, width: 300, height: 300, borderRadius: "50%", background: "rgba(0,102,255,0.04)", pointerEvents: "none" }} />
+
+          <div style={{ width: "min(700px, 100%)", position: "relative", zIndex: 1 }}>
+            <div style={{ textAlign: "center", marginBottom: "36px", animation: "fadeIn 0.5s ease" }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: "16px", background: T.accent,
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                fontWeight: 800, color: "#fff", fontSize: "24px", marginBottom: "16px",
+                boxShadow: "0 8px 24px rgba(0,102,255,0.3)",
+              }}>B</div>
+              <h1 style={{ color: "#fff", fontSize: "30px", fontWeight: 700, margin: "0 0 8px", letterSpacing: "-0.02em" }}>
+                Welcome to Bhugtan
+              </h1>
+              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "15px", margin: 0 }}>
+                Complete your onboarding to start managing corporate payments
+              </p>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "32px" }}>
+              {steps.map((s, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px",
+                  borderRadius: "24px",
+                  background: i <= step ? "rgba(0,102,255,0.25)" : "rgba(255,255,255,0.06)",
+                  transition: "all 0.3s ease",
+                }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: "50%", display: "flex",
+                    alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700,
+                    background: i < step ? T.success : i === step ? T.accent : "rgba(255,255,255,0.12)",
+                    color: "#fff", transition: "all 0.3s ease",
+                  }}>
+                    {i < step ? <Icon name="check" size={14} color="#fff" /> : i + 1}
+                  </div>
+                  <span style={{
+                    color: i <= step ? "#fff" : "rgba(255,255,255,0.35)",
+                    fontSize: "13px", fontWeight: 600,
+                  }}>{s.title}</span>
+                </div>
+              ))}
+            </div>
+
+            <Card style={{ padding: "36px", animation: "fadeIn 0.4s ease" }}>
+              {step === 0 && (
+                <div>
+                  <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 6px" }}>Company Details</h2>
+                  <p style={{ color: T.textSecondary, margin: "0 0 28px", fontSize: "14px" }}>Enter your organization's basic information</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <Input label="Company Name" placeholder="Acme Corp Pvt Ltd" />
+                    <Input label="CIN Number" placeholder="U12345MH2020PTC123456" />
+                    <Input label="PAN Number" placeholder="AAECA1234F" />
+                    <Input label="GST Number" placeholder="27AAECA1234F1Z5" />
+                    <div style={{ gridColumn: "1 / -1" }}><Input label="Registered Address" placeholder="123, Business Park, Mumbai" /></div>
+                    <Input label="Contact Email" placeholder="admin@acmecorp.com" type="email" />
+                    <Input label="Contact Phone" placeholder="+91 98765 43210" />
+                  </div>
+                </div>
+              )}
+              {step === 1 && (
+                <div>
+                  <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 6px" }}>KYC Documents</h2>
+                  <p style={{ color: T.textSecondary, margin: "0 0 24px", fontSize: "14px" }}>All documents have been uploaded successfully</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {docs.map((doc, i) => (
+                      <div key={i} className="animate-in" style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "14px 18px", borderRadius: T.radiusSm, background: T.successLight,
+                        border: `1px solid #C3EDDA`, animationDelay: `${i * 0.05}s`,
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <Icon name="doc" size={20} color={T.success} />
+                          <div>
+                            <div style={{ fontSize: "14px", fontWeight: 600, color: T.text }}>{doc.name}</div>
+                            <div style={{ fontSize: "12px", color: T.textSecondary }}>{doc.file}</div>
+                          </div>
+                        </div>
+                        <Badge variant="success">Uploaded</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {step === 2 && (
+                <div>
+                  <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 6px" }}>Bank Details</h2>
+                  <p style={{ color: T.textSecondary, margin: "0 0 28px", fontSize: "14px" }}>Add your primary settlement bank account</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <Input label="Account Holder Name" placeholder="Acme Corp Pvt Ltd" />
+                    <Input label="Account Number" placeholder="1234567890123456" />
+                    <Input label="IFSC Code" placeholder="SBIN0001234" />
+                    <Input label="Bank Name" placeholder="State Bank of India" />
+                    <Input label="Branch" placeholder="Mumbai Main Branch" />
+                    <Input label="Account Type" placeholder="Current Account" />
+                  </div>
+                </div>
+              )}
+              {step === 3 && (
+                <div>
+                  <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 6px" }}>Review & Submit</h2>
+                  <p style={{ color: T.textSecondary, margin: "0 0 24px", fontSize: "14px" }}>Everything looks great! Ready for submission.</p>
+                  <div style={{ padding: "24px", borderRadius: T.radius, background: T.surfaceAlt, border: `1px solid ${T.border}` }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                      {[["Company Name", "Acme Corp Pvt Ltd"], ["CIN", "U12345MH2020PTC123456"], ["PAN", "AAECA1234F"], ["GST", "27AAECA1234F1Z5"], ["Documents", "6/6 Uploaded"], ["Bank Account", "SBIN ****3456"]].map(([l, v], i) => (
+                        <div key={i}>
+                          <div style={{ fontSize: "12px", color: T.textMuted, marginBottom: "4px", fontWeight: 500 }}>{l}</div>
+                          <div style={{ fontSize: "14px", fontWeight: 600, color: T.text }}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{
+                    marginTop: "20px", padding: "14px 16px", borderRadius: T.radiusSm,
+                    background: T.accentLight, display: "flex", alignItems: "center", gap: "10px",
+                  }}>
+                    <Icon name="shield" size={20} color={T.accent} />
+                    <span style={{ fontSize: "13px", color: T.accent, fontWeight: 500 }}>
+                      Your data is encrypted and securely stored. KYC verification typically completes within 24-48 hours.
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "32px", paddingTop: "24px", borderTop: `1px solid ${T.border}` }}>
+                <Button variant="ghost" onClick={() => step > 0 && setStep(step - 1)} disabled={step === 0}>Back</Button>
+                <Button variant="accent" onClick={() => step < 3 ? setStep(step + 1) : onComplete()}>
+                  {step === 3 ? "Submit Application ✓" : "Continue →"}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      );
+    };
+
+    // ─── Role Selector ───
+    const RoleSelector = ({ onSelect }) => (
+      <div style={{
+        minHeight: "100vh", background: T.bg, display: "flex",
+        alignItems: "center", justifyContent: "center", padding: "40px 20px",
+        fontFamily: T.font,
+      }}>
+        <div style={{ textAlign: "center", maxWidth: 860 }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: "16px", background: T.accent,
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 800, color: "#fff", fontSize: "24px", marginBottom: "20px",
+            boxShadow: "0 8px 24px rgba(0,102,255,0.2)",
+          }}>B</div>
+          <h1 style={{ fontSize: "32px", fontWeight: 700, color: T.text, margin: "0 0 8px", letterSpacing: "-0.02em" }}>Select Your Role</h1>
+          <p style={{ color: T.textSecondary, fontSize: "15px", margin: "0 0 44px" }}>Choose a panel to explore the Bhugtan Portal</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+            {[
+              { role: "maker", icon: "bill", color: T.accent, title: "Maker", desc: "Create and manage bills, submit payment requests, track reports", features: ["Add / Remove Bills", "Request Payments", "View Reports", "Wallet Load"] },
+              { role: "checker", icon: "approve", color: T.success, title: "Checker", desc: "Review, approve or reject bills and payments, manage balance", features: ["Approve Bills", "Process Payments", "All Reports", "Balance Approval"] },
+              { role: "admin", icon: "shield", color: T.warning, title: "Admin", desc: "Manage users, set permissions, grant limits, system oversight", features: ["Manage Users", "Set Rights", "Grant Limits", "Full Oversight"] },
+            ].map((r, i) => (
+              <Card key={r.role} hover onClick={() => onSelect(r.role)} style={{
+                textAlign: "left", cursor: "pointer", padding: "32px 28px",
+                animation: "fadeIn 0.5s ease both", animationDelay: `${i * 0.1}s`,
+              }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: "14px", display: "flex",
+                  alignItems: "center", justifyContent: "center", background: r.color + "14",
+                  marginBottom: "20px",
+                }}>
+                  <Icon name={r.icon} size={26} color={r.color} />
+                </div>
+                <h3 style={{ fontSize: "22px", fontWeight: 700, color: T.text, margin: "0 0 8px" }}>{r.title}</h3>
+                <p style={{ fontSize: "14px", color: T.textSecondary, margin: "0 0 20px", lineHeight: 1.6 }}>{r.desc}</p>
+                <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: "16px" }}>
+                  {r.features.map((f, j) => (
+                    <div key={j} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                      <Icon name="check" size={14} color={r.color} />
+                      <span style={{ fontSize: "13px", color: T.textSecondary }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{
+                  marginTop: "20px", padding: "10px", borderRadius: T.radiusSm,
+                  background: r.color + "10", textAlign: "center",
+                  fontSize: "13px", fontWeight: 600, color: r.color,
+                }}>Enter {r.title} Panel →</div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+
+    // ─── MAKER SCREENS ───
+    const MakerDashboard = () => (
+      <div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "28px" }}>
+          {[
+            { icon: "bill", label: "Total Bills", value: "156", change: 12, color: T.accent },
+            { icon: "pending", label: "Pending Approval", value: "23", change: -5, color: T.warning },
+            { icon: "approve", label: "Approved", value: "118", change: 8, color: T.success },
+            { icon: "wallet", label: "Wallet Balance", value: "₹4,52,800", color: T.primary },
+          ].map((s, i) => (
+            <div key={i} className={`animate-in animate-in-${i+1}`}><StatCard {...s} /></div>
+          ))}
+        </div>
+        <Card className="animate-in" style={{ animationDelay: "0.2s" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>Recent Bills</h3>
+            <Button variant="outline" size="sm" icon="filter">Filter</Button>
+          </div>
+          <Table
+            columns={[
+              { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px", fontWeight: 500 }}>{v}</span> },
+              { key: "vendor", label: "Vendor" },
+              { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+              { key: "date", label: "Date" },
+              { key: "status", label: "Status", render: v => <Badge variant={v === "Approved" ? "success" : v === "Pending" ? "warning" : "danger"}>{v}</Badge> },
+            ]}
+            data={[
+              { id: "BIL-001", vendor: "Reliance Jio", amount: "15,400", date: "28 Feb 2026", status: "Pending" },
+              { id: "BIL-002", vendor: "AWS India", amount: "2,34,500", date: "27 Feb 2026", status: "Approved" },
+              { id: "BIL-003", vendor: "Tata Communications", amount: "45,600", date: "26 Feb 2026", status: "Approved" },
+              { id: "BIL-004", vendor: "Vodafone Idea", amount: "8,900", date: "25 Feb 2026", status: "Rejected" },
+              { id: "BIL-005", vendor: "Microsoft Azure", amount: "1,78,200", date: "24 Feb 2026", status: "Pending" },
+            ]}
+            actions={(row) => <Button variant="ghost" size="sm" icon="eye">View</Button>}
+          />
+        </Card>
+      </div>
+    );
+
+    const AddBills = () => {
+      const [modal, setModal] = useState(false);
+      return (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>Add Bills</h2>
+              <p style={{ margin: "4px 0 0", fontSize: "14px", color: T.textSecondary }}>Create new bill entries for payment processing</p>
+            </div>
+            <Button variant="accent" icon="add" onClick={() => setModal(true)}>New Bill</Button>
+          </div>
+          <Card>
+            <Table
+              columns={[
+                { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+                { key: "vendor", label: "Vendor Name" },
+                { key: "category", label: "Category", render: v => <Badge variant="muted">{v}</Badge> },
+                { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+                { key: "due", label: "Due Date" },
+                { key: "status", label: "Status", render: v => <Badge variant={v === "Draft" ? "muted" : "warning"}>{v}</Badge> },
+              ]}
+              data={[
+                { id: "BIL-006", vendor: "Google Cloud", category: "IT Services", amount: "3,42,000", due: "15 Mar 2026", status: "Draft" },
+                { id: "BIL-007", vendor: "Office Supplies Co.", category: "Office", amount: "12,500", due: "10 Mar 2026", status: "Submitted" },
+                { id: "BIL-008", vendor: "BSNL Broadband", category: "Telecom", amount: "5,600", due: "05 Mar 2026", status: "Draft" },
+              ]}
+              actions={(row) => (
+                <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                  <Button variant="ghost" size="sm">Edit</Button>
+                  <Button variant="accent" size="sm">Submit</Button>
+                </div>
+              )}
+            />
+          </Card>
+          <Modal open={modal} onClose={() => setModal(false)} title="Create New Bill" width={600}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <Input label="Vendor Name" placeholder="Enter vendor name" />
+              <Input label="Vendor Code" placeholder="VND-XXX" />
+              <Input label="Bill Number" placeholder="INV-2026-XXX" />
+              <Input label="Bill Date" placeholder="DD/MM/YYYY" type="date" />
+              <Input label="Amount (₹)" placeholder="0.00" icon="balance" />
+              <Input label="Due Date" placeholder="DD/MM/YYYY" type="date" />
+              <div style={{ gridColumn: "1 / -1" }}><Input label="Category" placeholder="Select category" /></div>
+              <div style={{ gridColumn: "1 / -1" }}><Input label="Description" placeholder="Brief description of the bill" /></div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: "13px", fontWeight: 600, color: T.textSecondary, display: "block", marginBottom: "6px" }}>Attach Invoice</label>
+                <div style={{ border: `2px dashed ${T.border}`, borderRadius: T.radiusSm, padding: "32px", textAlign: "center", cursor: "pointer", background: T.surfaceAlt, transition: "border-color 0.2s ease" }}>
+                  <Icon name="upload" size={28} color={T.textMuted} />
+                  <div style={{ fontSize: "14px", color: T.textSecondary, marginTop: "8px" }}>Drop files here or click to upload</div>
+                  <div style={{ fontSize: "12px", color: T.textMuted, marginTop: "4px" }}>PDF, JPG, PNG up to 10MB</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "24px" }}>
+              <Button variant="outline" onClick={() => setModal(false)}>Cancel</Button>
+              <Button variant="accent" icon="add">Create Bill</Button>
+            </div>
+          </Modal>
+        </div>
+      );
+    };
+
+    const GenericTable = ({ title, desc, columns, data, actions, actionBtn }) => (
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>{title}</h2>
+            {desc && <p style={{ margin: "4px 0 0", fontSize: "14px", color: T.textSecondary }}>{desc}</p>}
+          </div>
+          {actionBtn}
+        </div>
+        <Card><Table columns={columns} data={data} actions={actions} /></Card>
+      </div>
+    );
+
+    const RemoveBills = () => (
+      <GenericTable title="Remove Bills" desc="Request removal of incorrectly entered bills"
+        columns={[
+          { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+          { key: "vendor", label: "Vendor" },
+          { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+          { key: "reason", label: "Reason" },
+          { key: "status", label: "Status", render: v => <Badge variant={v === "Pending" ? "warning" : "success"}>{v}</Badge> },
+        ]}
+        data={[
+          { id: "BIL-003", vendor: "Tata Communications", amount: "45,600", reason: "Duplicate entry", status: "Pending" },
+          { id: "BIL-009", vendor: "Airtel Business", amount: "22,300", reason: "Wrong amount", status: "Removed" },
+        ]}
+        actions={(row) => <Button variant="danger" size="sm" icon="remove" disabled={row.status !== "Pending"}>Remove</Button>}
+      />
+    );
+
+    const RequestToPay = () => (
+      <GenericTable title="Request to Pay" desc="Submit approved bills for payment processing"
+        columns={[
+          { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+          { key: "vendor", label: "Vendor" },
+          { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+          { key: "due", label: "Due Date" },
+          { key: "status", label: "Payment Status", render: v => <Badge variant={v === "Requested" ? "default" : v === "Processing" ? "warning" : "success"}>{v}</Badge> },
+        ]}
+        data={[
+          { id: "BIL-002", vendor: "AWS India", amount: "2,34,500", due: "05 Mar 2026", status: "Requested" },
+          { id: "BIL-010", vendor: "Flipkart Wholesale", amount: "89,000", due: "10 Mar 2026", status: "Processing" },
+          { id: "BIL-011", vendor: "Zoho Corp", amount: "34,200", due: "01 Mar 2026", status: "Paid" },
+        ]}
+        actions={(row) => <Button variant="accent" size="sm" icon="pay" disabled={row.status !== "Requested"}>Pay Now</Button>}
+      />
+    );
+
+    const Reports = ({ full }) => (
+      <div>
+        <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 700 }}>Reports{full ? " (All)" : ""}</h2>
+        <p style={{ margin: "0 0 24px", fontSize: "14px", color: T.textSecondary }}>{full ? "Complete transaction and activity reports" : "View your bill and payment reports"}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+          <StatCard icon="bill" label="Bills Created" value="156" color={T.accent} />
+          <StatCard icon="pay" label="Total Paid" value="₹24,56,800" color={T.success} />
+          <StatCard icon="pending" label="Pending Amount" value="₹3,45,200" color={T.warning} />
+        </div>
+        <Card>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>Transaction History</h3>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <Button variant="outline" size="sm" icon="calendar">Date Range</Button>
+              <Button variant="outline" size="sm" icon="filter">Filter</Button>
+              <Button variant="primary" size="sm" icon="download">Export</Button>
+            </div>
+          </div>
+          <Table
+            columns={[
+              { key: "txn", label: "Transaction ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+              { key: "vendor", label: "Vendor" },
+              { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+              { key: "date", label: "Date" },
+              { key: "type", label: "Type", render: v => <Badge variant={v === "Credit" ? "success" : "danger"}>{v}</Badge> },
+              { key: "status", label: "Status", render: v => <Badge variant="success">{v}</Badge> },
+            ]}
+            data={[
+              { txn: "TXN-260228-001", vendor: "AWS India", amount: "2,34,500", date: "28 Feb 2026", type: "Debit", status: "Completed" },
+              { txn: "TXN-260227-002", vendor: "Wallet Topup", amount: "5,00,000", date: "27 Feb 2026", type: "Credit", status: "Completed" },
+              { txn: "TXN-260226-003", vendor: "Tata Comm.", amount: "45,600", date: "26 Feb 2026", type: "Debit", status: "Completed" },
+            ]}
+          />
+        </Card>
+      </div>
+    );
+
+    const Complaints = () => {
+      const [modal, setModal] = useState(false);
+      return (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>Complaints</h2>
+              <p style={{ margin: "4px 0 0", fontSize: "14px", color: T.textSecondary }}>Raise and track support tickets</p>
+            </div>
+            <Button variant="accent" icon="add" onClick={() => setModal(true)}>New Complaint</Button>
+          </div>
+          <Card>
+            <Table
+              columns={[
+                { key: "id", label: "Ticket ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+                { key: "subject", label: "Subject" },
+                { key: "priority", label: "Priority", render: v => <Badge variant={v === "High" ? "danger" : v === "Medium" ? "warning" : "muted"}>{v}</Badge> },
+                { key: "date", label: "Raised On" },
+                { key: "status", label: "Status", render: v => <Badge variant={v === "Open" ? "danger" : v === "In Progress" ? "warning" : "success"}>{v}</Badge> },
+              ]}
+              data={[
+                { id: "TKT-101", subject: "Payment stuck for BIL-002", priority: "High", date: "28 Feb 2026", status: "Open" },
+                { id: "TKT-098", subject: "Incorrect vendor details", priority: "Medium", date: "25 Feb 2026", status: "In Progress" },
+                { id: "TKT-090", subject: "Wallet load delay", priority: "Low", date: "20 Feb 2026", status: "Resolved" },
+              ]}
+              actions={(row) => <Button variant="ghost" size="sm" icon="eye">View</Button>}
+            />
+          </Card>
+          <Modal open={modal} onClose={() => setModal(false)} title="Raise New Complaint">
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <Input label="Subject" placeholder="Brief description of the issue" />
+              <Input label="Related Bill ID (Optional)" placeholder="BIL-XXX" />
+              <Input label="Priority" placeholder="Select priority" />
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: 600, color: T.textSecondary, display: "block", marginBottom: "6px" }}>Description</label>
+                <textarea placeholder="Describe your issue in detail..." style={{ width: "100%", minHeight: "100px", padding: "12px 14px", borderRadius: T.radiusSm, border: `1.5px solid ${T.border}`, fontFamily: T.font, fontSize: "14px", color: T.text, resize: "vertical", outline: "none", boxSizing: "border-box" }} />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "24px" }}>
+              <Button variant="outline" onClick={() => setModal(false)}>Cancel</Button>
+              <Button variant="accent" icon="complaint">Submit Complaint</Button>
+            </div>
+          </Modal>
+        </div>
+      );
+    };
+
+    const WalletLoad = () => {
+      const [modal, setModal] = useState(false);
+      return (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>Wallet Load Request</h2>
+              <p style={{ margin: "4px 0 0", fontSize: "14px", color: T.textSecondary }}>Request funds to be loaded into your payment wallet</p>
+            </div>
+            <Button variant="accent" icon="wallet" onClick={() => setModal(true)}>Request Load</Button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
+            <StatCard icon="wallet" label="Current Wallet Balance" value="₹4,52,800" color={T.success} />
+            <StatCard icon="pending" label="Pending Load Requests" value="₹2,00,000" color={T.warning} />
+          </div>
+          <Card>
+            <Table
+              columns={[
+                { key: "id", label: "Request ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+                { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+                { key: "date", label: "Requested On" },
+                { key: "method", label: "Method" },
+                { key: "status", label: "Status", render: v => <Badge variant={v === "Completed" ? "success" : "warning"}>{v}</Badge> },
+              ]}
+              data={[
+                { id: "WLR-050", amount: "2,00,000", date: "28 Feb 2026", method: "NEFT", status: "Pending" },
+                { id: "WLR-049", amount: "5,00,000", date: "27 Feb 2026", method: "RTGS", status: "Completed" },
+              ]}
+            />
+          </Card>
+          <Modal open={modal} onClose={() => setModal(false)} title="Request Wallet Load">
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <Input label="Amount (₹)" placeholder="Enter amount to load" icon="balance" />
+              <Input label="Transfer Method" placeholder="NEFT / RTGS / IMPS" />
+              <Input label="Reference Number" placeholder="Bank reference (optional)" />
+            </div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "24px" }}>
+              <Button variant="outline" onClick={() => setModal(false)}>Cancel</Button>
+              <Button variant="accent" icon="wallet">Submit Request</Button>
+            </div>
+          </Modal>
+        </div>
+      );
+    };
+
+    // ─── CHECKER SCREENS ───
+    const CheckerDashboard = () => (
+      <div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "28px" }}>
+          {[
+            { icon: "pending", label: "Pending Approvals", value: "23", change: -3, color: T.warning },
+            { icon: "approve", label: "Approved Today", value: "8", change: 15, color: T.success },
+            { icon: "pay", label: "Ready for Payment", value: "12", color: T.accent },
+            { icon: "wallet", label: "Available Balance", value: "₹12,45,000", color: T.primary },
+          ].map((s, i) => <div key={i} className={`animate-in animate-in-${i+1}`}><StatCard {...s} /></div>)}
+        </div>
+        <Card>
+          <h3 style={{ margin: "0 0 20px", fontSize: "16px", fontWeight: 700 }}>Bills Awaiting Review</h3>
+          <Table
+            columns={[
+              { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+              { key: "maker", label: "Submitted By" },
+              { key: "vendor", label: "Vendor" },
+              { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+              { key: "date", label: "Date" },
+            ]}
+            data={[
+              { id: "BIL-001", maker: "Rahul Sharma", vendor: "Reliance Jio", amount: "15,400", date: "28 Feb" },
+              { id: "BIL-005", maker: "Priya Patel", vendor: "Microsoft Azure", amount: "1,78,200", date: "28 Feb" },
+              { id: "BIL-012", maker: "Amit Kumar", vendor: "Zomato Corporate", amount: "6,800", date: "27 Feb" },
+            ]}
+            actions={(row) => (
+              <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                <Button variant="danger" size="sm">Reject</Button>
+                <Button variant="success" size="sm" icon="approve">Approve</Button>
+              </div>
+            )}
+          />
+        </Card>
+      </div>
+    );
+
+    const ApproveBills = () => {
+      const [tab, setTab] = useState(1);
+      return (
+        <div>
+          <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 700 }}>Approve Bills</h2>
+          <p style={{ margin: "0 0 24px", fontSize: "14px", color: T.textSecondary }}>Review and approve bills submitted by makers</p>
+          <Card>
+            <div style={{ display: "flex", gap: "6px", marginBottom: "20px" }}>
+              {["All (23)", "Pending (15)", "Approved (8)"].map((t, i) => (
+                <button key={i} onClick={() => setTab(i)} style={{
+                  padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer",
+                  fontFamily: T.font, fontSize: "13px", fontWeight: 600,
+                  background: tab === i ? T.accent : T.surfaceAlt,
+                  color: tab === i ? "#fff" : T.textSecondary,
+                  transition: "all 0.15s ease",
+                }}>{t}</button>
+              ))}
+            </div>
+            <Table
+              columns={[
+                { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+                { key: "maker", label: "Maker" },
+                { key: "vendor", label: "Vendor" },
+                { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+                { key: "category", label: "Category", render: v => <Badge variant="muted">{v}</Badge> },
+                { key: "due", label: "Due" },
+              ]}
+              data={[
+                { id: "BIL-001", maker: "Rahul S.", vendor: "Reliance Jio", amount: "15,400", category: "Telecom", due: "05 Mar" },
+                { id: "BIL-005", maker: "Priya P.", vendor: "Microsoft Azure", amount: "1,78,200", category: "IT", due: "10 Mar" },
+                { id: "BIL-012", maker: "Amit K.", vendor: "Zomato Corporate", amount: "6,800", category: "F&B", due: "01 Mar" },
+                { id: "BIL-013", maker: "Neha G.", vendor: "Urban Company", amount: "12,000", category: "Maintenance", due: "08 Mar" },
+              ]}
+              actions={(row) => (
+                <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                  <Button variant="ghost" size="sm" icon="eye">View</Button>
+                  <Button variant="danger" size="sm">Reject</Button>
+                  <Button variant="success" size="sm" icon="approve">Approve</Button>
+                </div>
+              )}
+            />
+          </Card>
+        </div>
+      );
+    };
+
+    const ProceedToPay = () => (
+      <div>
+        <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 700 }}>Proceed to Pay</h2>
+        <p style={{ margin: "0 0 24px", fontSize: "14px", color: T.textSecondary }}>Process approved bills for final payment</p>
+        <Card style={{ marginBottom: "20px", background: `linear-gradient(135deg, ${T.primary} 0%, #2D4A7A 100%)`, border: "none" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", marginBottom: "6px" }}>Available for Payment</div>
+              <div style={{ fontSize: "32px", fontWeight: 700, color: "#fff", fontFamily: T.fontMono }}>₹12,45,000</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", marginBottom: "6px" }}>Bills Ready</div>
+              <div style={{ fontSize: "32px", fontWeight: 700, color: "#fff" }}>12</div>
+            </div>
+          </div>
+        </Card>
+        <Card>
+          <Table
+            columns={[
+              { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+              { key: "vendor", label: "Vendor" },
+              { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+              { key: "method", label: "Payment Mode" },
+              { key: "account", label: "Account" },
+            ]}
+            data={[
+              { id: "BIL-002", vendor: "AWS India", amount: "2,34,500", method: "NEFT", account: "****3456" },
+              { id: "BIL-010", vendor: "Flipkart Wholesale", amount: "89,000", method: "RTGS", account: "****7890" },
+              { id: "BIL-011", vendor: "Zoho Corp", amount: "34,200", method: "IMPS", account: "****1234" },
+            ]}
+            actions={(row) => <Button variant="accent" size="sm" icon="pay">Process</Button>}
+          />
+        </Card>
+      </div>
+    );
+
+    const BalanceApprove = () => (
+      <GenericTable title="Balance Approve" desc="Approve wallet load and balance requests"
+        columns={[
+          { key: "id", label: "Request ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+          { key: "requester", label: "Requested By" },
+          { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+          { key: "method", label: "Method" },
+          { key: "date", label: "Date" },
+        ]}
+        data={[
+          { id: "WLR-050", requester: "Rahul S.", amount: "2,00,000", method: "NEFT", date: "28 Feb" },
+          { id: "WLR-051", requester: "Admin", amount: "10,00,000", method: "RTGS", date: "28 Feb" },
+        ]}
+        actions={(row) => (
+          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+            <Button variant="outline" size="sm">Reject</Button>
+            <Button variant="success" size="sm" icon="approve">Approve</Button>
+          </div>
+        )}
+      />
+    );
+
+    const RemoveRequests = () => (
+      <GenericTable title="Remove Requests" desc="Review bill removal requests from makers"
+        columns={[
+          { key: "id", label: "Bill ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+          { key: "maker", label: "Requested By" },
+          { key: "vendor", label: "Vendor" },
+          { key: "amount", label: "Amount", render: v => <span style={{ fontWeight: 600, fontFamily: T.fontMono }}>₹{v}</span> },
+          { key: "reason", label: "Reason" },
+        ]}
+        data={[
+          { id: "BIL-003", maker: "Rahul S.", vendor: "Tata Comm.", amount: "45,600", reason: "Duplicate entry" },
+          { id: "BIL-014", maker: "Priya P.", vendor: "BigBasket", amount: "3,200", reason: "Cancelled order" },
+        ]}
+        actions={(row) => (
+          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+            <Button variant="outline" size="sm">Deny</Button>
+            <Button variant="danger" size="sm" icon="remove">Approve Removal</Button>
+          </div>
+        )}
+      />
+    );
+
+    // ─── ADMIN SCREENS ───
+    const AdminDashboard = () => (
+      <div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "28px" }}>
+          {[
+            { icon: "users", label: "Total Users", value: "24", change: 4, color: T.accent },
+            { icon: "user", label: "Active Makers", value: "12", color: T.success },
+            { icon: "approve", label: "Active Checkers", value: "6", color: T.warning },
+            { icon: "limit", label: "Limit Granted", value: "₹50L", color: T.primary },
+          ].map((s, i) => <div key={i} className={`animate-in animate-in-${i+1}`}><StatCard {...s} /></div>)}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+          <Card>
+            <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: 700 }}>User Activity</h3>
+            {[
+              { user: "Rahul Sharma", action: "Added 3 bills", time: "2 min ago", color: T.accent },
+              { user: "Priya Patel", action: "Requested payment", time: "15 min ago", color: T.accent },
+              { user: "Vikash Singh", action: "Approved 5 bills", time: "1 hr ago", color: T.success },
+              { user: "Neha Gupta", action: "Rejected BIL-004", time: "2 hr ago", color: T.danger },
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 0", borderBottom: i < 3 ? `1px solid ${T.borderLight}` : "none" }}>
+                <div style={{ width: 36, height: 36, borderRadius: "10px", background: item.color + "14", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "13px", color: item.color }}>
+                  {item.user.split(" ").map(n => n[0]).join("")}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "14px", fontWeight: 600 }}>{item.user}</div>
+                  <div style={{ fontSize: "12px", color: T.textSecondary }}>{item.action}</div>
+                </div>
+                <span style={{ fontSize: "12px", color: T.textMuted }}>{item.time}</span>
+              </div>
+            ))}
+          </Card>
+          <Card>
+            <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: 700 }}>System Overview</h3>
+            {[
+              { label: "Today's Transactions", value: "₹8,34,500", icon: "pay" },
+              { label: "Pending Approvals", value: "23", icon: "pending" },
+              { label: "Active Complaints", value: "3", icon: "complaint" },
+              { label: "System Uptime", value: "99.97%", icon: "shield" },
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: i < 3 ? `1px solid ${T.borderLight}` : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Icon name={item.icon} size={18} color={T.textMuted} /><span style={{ fontSize: "14px", color: T.textSecondary }}>{item.label}</span>
+                </div>
+                <span style={{ fontSize: "15px", fontWeight: 700 }}>{item.value}</span>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    );
+
+    const ManageUsers = ({ type }) => {
+      const [modal, setModal] = useState(false);
+      const isMaker = type === "maker";
+      const c = isMaker ? T.accent : T.success;
+      return (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>Manage {isMaker ? "Makers" : "Checkers"}</h2>
+              <p style={{ margin: "4px 0 0", fontSize: "14px", color: T.textSecondary }}>Create and manage {isMaker ? "maker" : "checker"} accounts</p>
+            </div>
+            <Button variant="accent" icon="add" onClick={() => setModal(true)}>Add {isMaker ? "Maker" : "Checker"}</Button>
+          </div>
+          <Card>
+            <Table
+              columns={[
+                { key: "name", label: "Name", render: (v, row) => (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: "10px", background: c + "14", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "12px", color: c }}>
+                      {v.split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div><div style={{ fontWeight: 600 }}>{v}</div><div style={{ fontSize: "12px", color: T.textMuted }}>{row.email}</div></div>
+                  </div>
+                )},
+                { key: "id", label: "Employee ID", render: v => <span style={{ fontFamily: T.fontMono, fontSize: "13px" }}>{v}</span> },
+                { key: "department", label: "Department" },
+                { key: "limit", label: "Limit", render: v => <span style={{ fontFamily: T.fontMono, fontWeight: 600 }}>{v}</span> },
+                { key: "status", label: "Status", render: v => <Badge variant={v === "Active" ? "success" : "danger"}>{v}</Badge> },
+              ]}
+              data={isMaker ? [
+                { name: "Rahul Sharma", email: "rahul@acme.com", id: "EMP-101", department: "Finance", limit: "₹5,00,000", status: "Active" },
+                { name: "Priya Patel", email: "priya@acme.com", id: "EMP-105", department: "Procurement", limit: "₹3,00,000", status: "Active" },
+                { name: "Amit Kumar", email: "amit@acme.com", id: "EMP-112", department: "Operations", limit: "₹2,00,000", status: "Inactive" },
+              ] : [
+                { name: "Vikash Singh", email: "vikash@acme.com", id: "EMP-201", department: "Finance", limit: "₹25,00,000", status: "Active" },
+                { name: "Neha Gupta", email: "neha@acme.com", id: "EMP-204", department: "Audit", limit: "₹15,00,000", status: "Active" },
+              ]}
+              actions={(row) => (
+                <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                  <Button variant="ghost" size="sm" icon="settings">Edit</Button>
+                  <Button variant={row.status === "Active" ? "danger" : "success"} size="sm">{row.status === "Active" ? "Deactivate" : "Activate"}</Button>
+                </div>
+              )}
+            />
+          </Card>
+          <Modal open={modal} onClose={() => setModal(false)} title={`Add New ${isMaker ? "Maker" : "Checker"}`}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <Input label="Full Name" placeholder="Enter full name" />
+              <Input label="Employee ID" placeholder="EMP-XXX" />
+              <Input label="Email" placeholder="name@company.com" type="email" />
+              <Input label="Phone" placeholder="+91 XXXXX XXXXX" />
+              <Input label="Department" placeholder="Select department" />
+              <Input label="Transaction Limit" placeholder="₹0.00" icon="balance" />
+            </div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "24px" }}>
+              <Button variant="outline" onClick={() => setModal(false)}>Cancel</Button>
+              <Button variant="accent" icon="add">Create {isMaker ? "Maker" : "Checker"}</Button>
+            </div>
+          </Modal>
+        </div>
+      );
+    };
+
+    const SetRights = () => {
+      const [toggles, setToggles] = useState({ maker: [true,true,true,true,true,false], checker: [true,true,true,true,true,true] });
+      const toggle = (role, idx) => {
+        const copy = {...toggles};
+        copy[role] = [...copy[role]];
+        copy[role][idx] = !copy[role][idx];
+        setToggles(copy);
+      };
+      return (
+        <div>
+          <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 700 }}>Set Rights & Permissions</h2>
+          <p style={{ margin: "0 0 24px", fontSize: "14px", color: T.textSecondary }}>Configure access controls for makers and checkers</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            {[
+              { key: "maker", icon: "user", color: T.accent, title: "Maker Permissions", perms: ["Add Bills", "Remove Bills", "Request Payment", "View Reports", "Raise Complaints", "Wallet Load Request"] },
+              { key: "checker", icon: "approve", color: T.success, title: "Checker Permissions", perms: ["Approve Bills", "Remove Bill Requests", "Process Payments", "View All Reports", "Handle Complaints", "Balance Approval"] },
+            ].map(section => (
+              <Card key={section.key}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                  <Icon name={section.icon} size={20} color={section.color} />
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>{section.title}</h3>
+                </div>
+                {section.perms.map((perm, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: i < 5 ? `1px solid ${T.borderLight}` : "none" }}>
+                    <span style={{ fontSize: "14px", color: T.text }}>{perm}</span>
+                    <div onClick={() => toggle(section.key, i)} style={{
+                      width: 44, height: 24, borderRadius: "12px", padding: "2px",
+                      background: toggles[section.key][i] ? T.success : T.border,
+                      cursor: "pointer", transition: "background 0.2s ease",
+                    }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                        boxShadow: T.shadow, transition: "transform 0.2s ease",
+                        transform: toggles[section.key][i] ? "translateX(20px)" : "translateX(0)",
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </Card>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const LimitGrant = () => {
+      const [modal, setModal] = useState(false);
+      return (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>Limit Grant</h2>
+              <p style={{ margin: "4px 0 0", fontSize: "14px", color: T.textSecondary }}>Set transaction limits for checkers</p>
+            </div>
+            <Button variant="accent" icon="limit" onClick={() => setModal(true)}>Grant Limit</Button>
+          </div>
+          <Card>
+            <Table
+              columns={[
+                { key: "name", label: "Checker", render: v => (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: "10px", background: T.success + "14", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "12px", color: T.success }}>
+                      {v.split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <span style={{ fontWeight: 600 }}>{v}</span>
+                  </div>
+                )},
+                { key: "current", label: "Current Limit", render: v => <span style={{ fontFamily: T.fontMono, fontWeight: 600 }}>₹{v}</span> },
+                { key: "used", label: "Used", render: v => <span style={{ fontFamily: T.fontMono }}>₹{v}</span> },
+                { key: "available", label: "Available", render: v => <span style={{ fontFamily: T.fontMono, fontWeight: 600, color: T.success }}>₹{v}</span> },
+                { key: "lastUpdated", label: "Last Updated" },
+              ]}
+              data={[
+                { name: "Vikash Singh", current: "25,00,000", used: "18,45,000", available: "6,55,000", lastUpdated: "27 Feb 2026" },
+                { name: "Neha Gupta", current: "15,00,000", used: "9,20,000", available: "5,80,000", lastUpdated: "25 Feb 2026" },
+              ]}
+              actions={(row) => <Button variant="accent" size="sm" icon="limit" onClick={() => setModal(true)}>Update</Button>}
+            />
+          </Card>
+          <Modal open={modal} onClose={() => setModal(false)} title="Grant / Update Limit">
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <Input label="Select Checker" placeholder="Choose checker" />
+              <Input label="New Limit Amount (₹)" placeholder="Enter new limit" icon="balance" />
+              <Input label="Effective From" placeholder="DD/MM/YYYY" type="date" />
+              <Input label="Remarks" placeholder="Reason for limit change" />
+            </div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "24px" }}>
+              <Button variant="outline" onClick={() => setModal(false)}>Cancel</Button>
+              <Button variant="accent" icon="limit">Grant Limit</Button>
+            </div>
+          </Modal>
+        </div>
+      );
+    };
+
+    const LimitRemove = () => (
+      <GenericTable title="Limit Remove" desc="Revoke or reduce transaction limits"
+        columns={[
+          { key: "name", label: "Checker" },
+          { key: "current", label: "Current Limit", render: v => <span style={{ fontFamily: T.fontMono, fontWeight: 600 }}>₹{v}</span> },
+          { key: "reason", label: "Reason for Review" },
+          { key: "status", label: "Status", render: v => <Badge variant={v === "Active" ? "success" : "warning"}>{v}</Badge> },
+        ]}
+        data={[
+          { name: "Vikash Singh", current: "25,00,000", reason: "Quarterly review", status: "Active" },
+          { name: "Neha Gupta", current: "15,00,000", reason: "Department change", status: "Under Review" },
+        ]}
+        actions={(row) => (
+          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+            <Button variant="outline" size="sm">Reduce</Button>
+            <Button variant="danger" size="sm" icon="remove">Revoke</Button>
+          </div>
+        )}
+      />
+    );
+
+    // ─── Main App ───
+    function BhugtanPortal() {
+      const [view, setView] = useState("onboarding");
+      const [role, setRole] = useState(null);
+      const [activeItem, setActiveItem] = useState("dashboard");
+      const [collapsed, setCollapsed] = useState(false);
+
+      const handleOnboardingComplete = () => setView("roleSelect");
+      const handleRoleSelect = (r) => { setRole(r); setView("app"); setActiveItem("dashboard"); };
+      const goHome = () => { setView("roleSelect"); setRole(null); setActiveItem("dashboard"); };
+
+      if (view === "onboarding") return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+      if (view === "roleSelect") return <RoleSelector onSelect={handleRoleSelect} />;
+
+      const renderContent = () => {
+        if (role === "maker") {
+          switch (activeItem) {
+            case "dashboard": return <MakerDashboard />;
+            case "add-bills": return <AddBills />;
+            case "remove-bills": return <RemoveBills />;
+            case "request-pay": return <RequestToPay />;
+            case "reports": return <Reports />;
+            case "complaints": return <Complaints />;
+            case "wallet-load": return <WalletLoad />;
+            default: return <MakerDashboard />;
+          }
+        }
+        if (role === "checker") {
+          switch (activeItem) {
+            case "dashboard": return <CheckerDashboard />;
+            case "approve-bills": return <ApproveBills />;
+            case "remove-req": return <RemoveRequests />;
+            case "proceed-pay": return <ProceedToPay />;
+            case "reports": return <Reports full />;
+            case "complaints": return <Complaints />;
+            case "balance-approve": return <BalanceApprove />;
+            default: return <CheckerDashboard />;
+          }
+        }
+        if (role === "admin") {
+          switch (activeItem) {
+            case "dashboard": return <AdminDashboard />;
+            case "manage-makers": return <ManageUsers type="maker" />;
+            case "manage-checkers": return <ManageUsers type="checker" />;
+            case "set-rights": return <SetRights />;
+            case "limit-grant": return <LimitGrant />;
+            case "limit-remove": return <LimitRemove />;
+            case "complaints": return <Complaints />;
+            default: return <AdminDashboard />;
+          }
+        }
+      };
+
+      const titles = {
+        maker: { dashboard: ["Dashboard", "Overview of your bills and payments"], "add-bills": ["Add Bills", "Create new bill entries"], "remove-bills": ["Remove Bills", "Request bill removals"], "request-pay": ["Request to Pay", "Submit for payment"], reports: ["Reports", "Your activity reports"], complaints: ["Complaints", "Support tickets"], "wallet-load": ["Wallet Load", "Fund your wallet"] },
+        checker: { dashboard: ["Dashboard", "Approval queue overview"], "approve-bills": ["Approve Bills", "Review submitted bills"], "remove-req": ["Remove Requests", "Bill removal requests"], "proceed-pay": ["Proceed to Pay", "Process payments"], reports: ["Reports (All)", "Complete reports"], complaints: ["Complaints", "Support tickets"], "balance-approve": ["Balance Approve", "Wallet approvals"] },
+        admin: { dashboard: ["Dashboard", "System overview"], "manage-makers": ["Manage Makers", "Maker accounts"], "manage-checkers": ["Manage Checkers", "Checker accounts"], "set-rights": ["Set Rights", "User permissions"], "limit-grant": ["Limit Grant", "Transaction limits"], "limit-remove": ["Limit Remove", "Revoke limits"], complaints: ["Complaints", "Support tickets"] },
+      };
+      const [title, subtitle] = (titles[role] && titles[role][activeItem]) || ["Dashboard", ""];
+
+      return (
+        <div style={{ fontFamily: T.font, background: T.bg, minHeight: "100vh", color: T.text }}>
+          <Sidebar role={role} activeItem={activeItem} onNavigate={setActiveItem} collapsed={collapsed} />
+          <div style={{ marginLeft: collapsed ? 72 : 260, transition: "margin-left 0.3s cubic-bezier(0.4,0,0.2,1)", minHeight: "100vh" }}>
+            <Header title={title} subtitle={subtitle} onToggleSidebar={() => setCollapsed(!collapsed)} onHome={goHome} />
+            <main style={{ padding: "28px 32px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "20px", fontSize: "13px", color: T.textMuted }}>
+                <span style={{ cursor: "pointer" }} onClick={goHome}>Home</span>
+                <Icon name="chevron" size={14} color={T.textMuted} />
+                <span style={{ cursor: "pointer", textTransform: "capitalize" }} onClick={() => setActiveItem("dashboard")}>{role}</span>
+                {activeItem !== "dashboard" && <>
+                  <Icon name="chevron" size={14} color={T.textMuted} />
+                  <span style={{ color: T.text, fontWeight: 500 }}>{title}</span>
+                </>}
+              </div>
+              <div key={activeItem} className="animate-in">
+                {renderContent()}
+              </div>
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<BhugtanPortal />);
+  </script>
+</body>
+</html>
